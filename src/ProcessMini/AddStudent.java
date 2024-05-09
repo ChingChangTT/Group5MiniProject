@@ -7,8 +7,5 @@ public interface AddStudent {
     List<String> add();
     void listStudentsAsTable() throws IOException;
 
-
-
-
 }
 
