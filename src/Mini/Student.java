@@ -11,11 +11,8 @@ import org.nocrala.tools.texttablefmt.Table;
 import java.io.*;
 import java.nio.file.*;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Data
 @AllArgsConstructor
@@ -98,21 +95,19 @@ public class Student implements AddStudent {
     }
 
     public void WriteDataToFile() {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(inputFilePath))) {
-            String studentData = students.stream()
-                    .map(s -> s.getId() + "," + s.getName() + "," + s.getDateOfBirth() + "," +
-                            s.getClassroom() + "," + s.getSubject())
-                    .collect(Collectors.joining(System.lineSeparator())); // Join with line separator
-
-            // Write the data to the file
-            writer.write(studentData);
-            writer.newLine();
-            //System.out.println("Data appended successfully to " + inputFilePath);
-
+        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(inputFilePath))) {
+            StringBuilder studentData = new StringBuilder();
+            for (Student s : students) {
+                studentData.append(s.getId()).append(",").append(s.getName()).append(",").append(s.getDateOfBirth()).append(",")
+                        .append(s.getClassroom()).append(",").append(s.getSubject()).append(System.lineSeparator());
+            }
+            bos.write(studentData.toString().getBytes());
+            System.out.println("Data written successfully to " + inputFilePath);
         } catch (IOException e) {
             System.out.println("Error writing to file: " + e.getMessage());
         }
     }
+
 
     @Override
     public void listStudentsAsTable() {
@@ -141,16 +136,21 @@ public class Student implements AddStudent {
 
         Instant afterReadDate = Instant.now();
 
-        System.out.println("Time used to read data  : " + (afterReadDate.toEpochMilli() -beforeReadData.toEpochMilli()  )*0.001 + "s" );
+        System.out.println("Time used to read data (1000 000) : " + (afterReadDate.toEpochMilli() -beforeReadData.toEpochMilli()  )*0.001 + "s" );
 
     }
 
     public void readDataFromFile(String filePath) {
-        try {
-            // tract start reading time
-
-            Stream<String> lines = Files.lines(Paths.get(filePath));
-            List<Student> studentList = lines.map(line -> {
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(filePath))) {
+            StringBuilder content = new StringBuilder();
+            byte[] buffer = new byte[1024]; // You can adjust buffer size according to your needs
+            int bytesRead;
+            while ((bytesRead = bis.read(buffer)) != -1) {
+                content.append(new String(buffer, 0, bytesRead));
+            }
+            String[] lines = content.toString().split(System.lineSeparator());
+            students = Arrays.stream(lines)
+                    .map(line -> {
                         String[] parts = line.split(",");
                         if (parts.length >= 5) {
                             String id = parts[0];
@@ -165,21 +165,13 @@ public class Student implements AddStudent {
                     })
                     .filter(Objects::nonNull)
                     .collect(Collectors.toList());
-            students.clear();
-            students.addAll(studentList);
-            // Close the Stream
-            lines.close();
 
             System.out.println("Data read successfully from " + filePath);
-            //tract time after read dataf
-            /*try{
-                Thread.sleep(2000);
-            }catch (Exception e){}*/
-
-       } catch (IOException e) {
-            System.out.println("File not found" + e.getMessage());
+        } catch (IOException e) {
+            System.out.println("Error reading from file: " + e.getMessage());
         }
     }
+
     @Override
     public void searchStudent() {
         System.out.println("Enter the ID or name of the student to search:");
@@ -271,7 +263,6 @@ public class Student implements AddStudent {
         }
     }
 
-
     public static String repeat(String str, int times) {
         return new String(new char[times]).replace("\0", str);
     }
@@ -297,28 +288,34 @@ public class Student implements AddStudent {
         }
     }
 
-    public void InsertDummyData(){
-        try(BufferedWriter writer = new BufferedWriter(new FileWriter(inputFilePath))){
-
-            for(int i = 0 ; i< 1000000 ; i++){
-                int randomNum = new Random().nextInt(90000) + 10000;
-                String id = String.valueOf(randomNum);
-                name = "student" + i;
-                dateOfBirth = "2024-05-11";
-                classroom="Morning";
-                subject="Java";
-                Student student = new Student(id, name, dateOfBirth, classroom, subject);
-                students.add(student);
-               WriteDataToFile();
-                System.out.println("order : " + i);
-                //students.clear();
+    public void InsertDummyData() throws IOException {
+        String file = "DummyFile.csv";
+        Path filePath = Paths.get(file);
+        if (Files.exists(filePath) && Files.size(filePath) > 0) { // Check if the file exists and is not empty
+            readDataFromFile(file);
+            listStudentsAsTable();
+        } else {
+            try (BufferedWriter ignored = new BufferedWriter(new FileWriter(file))) {
+                for(int i = 0; i < 1000000; i++) {
+                    int randomNum = new Random().nextInt(90000) + 10000;
+                    String id = String.valueOf(randomNum);
+                    String name = "student" + i; // Initialize local variables
+                    String dateOfBirth = "2024-05-11";
+                    String classroom = "Morning";
+                    String subject = "Java";
+                    Student student = new Student(id, name, dateOfBirth, classroom, subject);
+                    students.add(student);
+                    WriteDataToFile(); // Assuming WriteDataToFile writes the students to a file
+                    System.out.println("order : " + i);
+                }
+                System.out.println("Finished Insert Batch of Students!!");
+            } catch (IOException e) {
+                System.out.println("Error writing to file: " + e.getMessage());
             }
-            System.out.println("Finished Insert Batch of Students!!");
-        }catch(Exception e){
-
         }
     }
-    public static void main(String[] args) {
+
+    public static void main(String[] args) throws IOException {
         Student student = new Student();
         Scanner scanner = new Scanner(System.in);
         int choice;
@@ -342,7 +339,7 @@ public class Student implements AddStudent {
 
                         4.Search for Student    5.Update Student by Info By ID  6.Delete Student Data\
 
-                        7.Generate Data to File 8.Delet/Clear Data Store From Data Store\
+                        7.Generate Data to File 8.Delete/Clear Data Store From Data Store\
                         9. Insert Dummy Data
                         0,99.Exit""");
                 System.out.println(repeat("=", 1000));
