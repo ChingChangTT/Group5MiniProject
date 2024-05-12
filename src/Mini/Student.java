@@ -26,8 +26,9 @@ public class Student implements AddStudent {
     private String subject;
     public static List<Student> students = new ArrayList<>();
     public static String inputFilePath = "output.csv";
+    public  static String outputFilePath="Temp.csv";
     @Override
-    public List<String> add() {
+    public List<String> add() throws IOException {
         Scanner scanner = new Scanner(System.in);
         int randomNum = new Random().nextInt(90000) + 10000;
         String id = String.valueOf(randomNum);
@@ -91,21 +92,22 @@ public class Student implements AddStudent {
         Student student = new Student(id, name, dateOfBirth, String.join(",",classrooms)
                  , String.join(",",subjects));
         students.add(student);
-        WriteDataToFile();
+        WriteDataToFile(outputFilePath);
+        commitOrNot();
         students.clear();
         return List.of();
     }
 
 
-    public void WriteDataToFile() {
-        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(inputFilePath))) {
+    public void WriteDataToFile(String paths) {
+        try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(paths))) {
             StringBuilder studentData = new StringBuilder();
             for (Student s : students) {
                 studentData.append(s.getId()).append("/").append(s.getName()).append("/").append(s.getDateOfBirth()).append("/")
                         .append(s.getClassroom()).append("/").append(s.getSubject()).append(System.lineSeparator());
             }
             bos.write(studentData.toString().getBytes());
-            System.out.println("Data written successfully to " + inputFilePath);
+            System.out.println("Data written successfully to " + paths);
         } catch (IOException e) {
             System.out.println("Error writing to file: " + e.getMessage());
         }
@@ -146,15 +148,9 @@ public class Student implements AddStudent {
 
     }
 
-    public void commitChangesToFile() {
-        WriteDataToFile();
-        System.out.println("Changes committed successfully to file.");
-    }
-    public void listDataStudent(List<Student> students,int pageNumber, int recordsPerPage){
+    public void listDataStudent(List<Student> students,int pageNumber, int recordsPerPage) throws IOException {
         int startIndex = (pageNumber - 1) * recordsPerPage;
         int endIndex = Math.min(startIndex + recordsPerPage, students.size());
-
-
         readDataFromFile("output.csv");
         listStudentsAsTable("output.csv");
     }
@@ -190,7 +186,7 @@ public class Student implements AddStudent {
             System.out.println("Error reading from file: " + e.getMessage());
         }
     }
-    private void displayStudentDataWithPagination(List<Student> students) {
+    private void displayStudentDataWithPagination(List<Student> students) throws IOException {
         Scanner scanner = new Scanner(System.in);
         final int pageSize = 5;
         int pageCount = (int) Math.ceil((double) students.size() / pageSize);
@@ -314,7 +310,7 @@ public class Student implements AddStudent {
             switch (answer) {
                 case "yes":
                     // Write updated data to file
-                    commitChangesToFile();
+//                    commitChangesToFile();
                     System.out.println("Changes committed successfully.");
                     break;
                 case "no":
@@ -328,7 +324,7 @@ public class Student implements AddStudent {
             System.out.println("Student with ID " + studentId + " not found.");
         }
     }
-    public static boolean addFile() {
+    public static boolean addFile() throws IOException {
         // Your existing code for adding a student
         Student stu=new Student();
         stu.add();
@@ -336,22 +332,52 @@ public class Student implements AddStudent {
         return true;
     }
 
+    public void commitOrNot() throws IOException {
+        Path tempFilePath = Paths.get("Temp.csv");
+        Path outputFilePath = Paths.get("output.csv");
+        boolean fileExistsAndNotEmpty = Files.exists(tempFilePath) && Files.size(tempFilePath)>0;
+        if (fileExistsAndNotEmpty==false) {
+            System.out.println("Data already commit So not need to commit ><.");
 
-    public final String answer = new Scanner(System.in).nextLine().trim().toLowerCase();
-    public void commitOrNot() {
-        System.out.println("Do you want to commit changes? (yes/no)");
-        if(answer!=null) {
-            switch (answer) {
-                case "yes":
-                    commitChangesToFile();
-                    break;
-                case "no":
-                    System.out.println("Changes discarded.");
-                    break;
-                default:
-                    System.out.println("Invalid input. Please enter 'yes' or 'no'.");
-                    commitOrNot(); // Ask again until valid response is given
-                    break;
+        } else {
+            System.out.println("Do you want to commit changes? (yes/no)");
+            String answer=new Scanner(System.in).nextLine();
+            if (answer.equals("yes")||answer.equals("Yes")){
+                try (BufferedReader reader = Files.newBufferedReader(tempFilePath);
+                     BufferedWriter writer = Files.newBufferedWriter(outputFilePath)) {
+                    String line;
+                    while ((line = reader.readLine())!= null) {
+                        writer.write(line);
+                        writer.newLine();
+                    }
+                } catch (IOException e) {
+                    System.out.println("Error transferring data: " + e.getMessage());
+                }
+
+                // Clear data from temp.csv
+//                try {
+//                    Files.write(tempFilePath, Collections.emptyList());
+//                    System.out.println("Data transferred and temp.csv cleared successfully.");
+//                } catch (IOException e) {
+//                    System.out.println("Error clearing temp.csv: " + e.getMessage());
+//                }
+                try (BufferedWriter writer = Files.newBufferedWriter(tempFilePath)) {
+                    writer.write("");
+                    writer.flush();
+                } catch (IOException e) {
+                    System.out.println("Error clearing Temp.csv: " + e.getMessage());
+                }
+                System.out.println("Data transferred and Temp.csv cleared successfully.");
+            }
+            else {
+                try (BufferedWriter writer = Files.newBufferedWriter(tempFilePath)) {
+                    writer.write("");
+                    writer.flush();
+                } catch (IOException e) {
+                    System.out.println("Error clearing Temp.csv: " + e.getMessage());
+                }
+                System.out.println("Data transferred and Temp.csv cleared successfully.");
+                System.out.println("Data has not input to file");
             }
         }
 
@@ -359,7 +385,7 @@ public class Student implements AddStudent {
 
     @Override
     public void deleteDataById(String filePath) {
-        commitChangesToFile();
+//        commitChangesToFile();
         Scanner scanner = new Scanner(System.in);
         System.out.println("Enter the ID of the student you want to delete:");
         String studentId = scanner.nextLine().trim();
@@ -430,7 +456,7 @@ public class Student implements AddStudent {
                     String subject = "Java";
                     Student student = new Student(id, name, dateOfBirth, classroom, subject);
                     students.add(student);
-                    WriteDataToFile(); // Assuming WriteDataToFile writes the students to a file
+//                    WriteDataToFile(); // Assuming WriteDataToFile writes the students to a file
                     System.out.println("order : " + i);
                 }
                 System.out.println("Finished Insert Batch of Students!!");
@@ -477,11 +503,7 @@ public class Student implements AddStudent {
             System.out.println("An error occurred while reading the file: " + e.getMessage());
         }
         do {
-           boolean addfile=addFile();
-           if (!addfile){
-               student.commitOrNot();
-               break;
-           }
+            student.commitOrNot();
             System.out.println("\n>>>>>>>>>>>>>Check In before Choose<<<<<<<<<<<<<");
             System.out.println(repeat("=", 1000));
             System.out.println("""
@@ -509,7 +531,7 @@ public class Student implements AddStudent {
                     System.out.print("\t\t[+] All record:"+count);
                     System.out.println("\t\t\t\t\t\t[+]Previous(prev)\t-Next(next)\t-Back(B)");
                     System.out.println(repeat("=", 1000));
-                    student.displayStudentDataWithPagination(students);
+//                    student.displayStudentDataWithPagination(students);
                     break;
                 case 3:
                     student.commitOrNot();
