@@ -26,7 +26,6 @@ public class Student implements AddStudent {
     private String subject;
     public static List<Student> students = new ArrayList<>();
     public static String inputFilePath = "output.csv";
-
     @Override
     public List<String> add() {
         Scanner scanner = new Scanner(System.in);
@@ -139,12 +138,10 @@ public class Student implements AddStudent {
 
         Instant afterReadDate = Instant.now();
         if (Objects.equals(file, "output.csv")){
-            System.out.print("Time used to read data: " + ((afterReadDate.toEpochMilli() - beforeReadData.toEpochMilli()) * 0.001) + "s");
-
+            System.out.print("Time used to read data: " + ((afterReadDate.toEpochMilli() - beforeReadData.toEpochMilli()) * 0.001) + "s\n");
         }
         else {
             System.out.print("Time used to read 1000 000 record: " + ((afterReadDate.toEpochMilli() - beforeReadData.toEpochMilli()) * 0.001) + "s");
-
         }
 
     }
@@ -331,25 +328,33 @@ public class Student implements AddStudent {
             System.out.println("Student with ID " + studentId + " not found.");
         }
     }
+    public static boolean addFile() {
+        // Your existing code for adding a student
+        Student stu=new Student();
+        stu.add();
+        // Return true if the data was added successfully
+        return true;
+    }
 
 
+    public final String answer = new Scanner(System.in).nextLine().trim().toLowerCase();
     public void commitOrNot() {
-        Scanner scanner = new Scanner(System.in);
         System.out.println("Do you want to commit changes? (yes/no)");
-        String answer = scanner.nextLine().trim().toLowerCase();
-
-        switch (answer) {
-            case "yes":
-                commitChangesToFile();
-                break;
-            case "no":
-                System.out.println("Changes discarded.");
-                break;
-            default:
-                System.out.println("Invalid input. Please enter 'yes' or 'no'.");
-                commitOrNot(); // Ask again until valid response is given
-                break;
+        if(answer!=null) {
+            switch (answer) {
+                case "yes":
+                    commitChangesToFile();
+                    break;
+                case "no":
+                    System.out.println("Changes discarded.");
+                    break;
+                default:
+                    System.out.println("Invalid input. Please enter 'yes' or 'no'.");
+                    commitOrNot(); // Ask again until valid response is given
+                    break;
+            }
         }
+
     }
 
     @Override
@@ -472,6 +477,11 @@ public class Student implements AddStudent {
             System.out.println("An error occurred while reading the file: " + e.getMessage());
         }
         do {
+           boolean addfile=addFile();
+           if (!addfile){
+               student.commitOrNot();
+               break;
+           }
             System.out.println("\n>>>>>>>>>>>>>Check In before Choose<<<<<<<<<<<<<");
             System.out.println(repeat("=", 1000));
             System.out.println("""
@@ -481,8 +491,6 @@ public class Student implements AddStudent {
 
                         7.Generate Data to File 8.Delete/Clear Data Store From Data Store
                         0,99.Exit""");
-            System.out.println(repeat("=", 1000));
-//            student.displayStudentDataWithPagination(students);
             System.out.println(repeat("=", 1000));
             System.out.println("Enter your choice: ");
             choice = scanner.nextInt();
@@ -495,6 +503,13 @@ public class Student implements AddStudent {
                     break;
                 case 2:
                     student.listDataStudent(students,5,5);
+                    System.out.println(repeat("=", 1000));
+                    System.out.print("[+]Page number : 1");
+                    System.out.print("\t\t[+]Actual Record :"+(count-1));
+                    System.out.print("\t\t[+] All record:"+count);
+                    System.out.println("\t\t\t\t\t\t[+]Previous(prev)\t-Next(next)\t-Back(B)");
+                    System.out.println(repeat("=", 1000));
+                    student.displayStudentDataWithPagination(students);
                     break;
                 case 3:
                     student.commitOrNot();
