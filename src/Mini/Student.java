@@ -177,11 +177,10 @@ public class Student implements AddStudent {
                             String id = parts[0];
                             String name = parts[1];
                             String dateOfBirth = parts[2];
-                            String[] classrooms = parts[3].split(",");
-                            List<String> classroomList = Arrays.asList(classrooms);
-                            String[] subjectParts=parts[4].split(",");
-                            List<String> subjectList = Arrays.asList(subjectParts);
-                            return new Student(id, name, dateOfBirth, classroomList.toString(), subjectList.toString());
+                            String classrooms = parts[3];
+                            String subjectParts=parts[4];
+
+                            return new Student(id, name, dateOfBirth, classrooms.toString(), subjectParts.toString());
                         } else {
                             return null;
                         }
@@ -200,6 +199,7 @@ public class Student implements AddStudent {
         int pageCount = (int) Math.ceil((double) students.size() / pageSize);
         int currentPage = 1;
 
+        label:
         while (true) {
             int startIndex = (currentPage - 1) * pageSize;
             int endIndex = Math.min(startIndex + pageSize, students.size());
@@ -212,22 +212,26 @@ public class Student implements AddStudent {
             System.out.println("\nEnter 'next' to view next page, 'prev' to view previous page, or 'exit' to quit:");
             String input = scanner.nextLine().trim().toLowerCase();
 
-            if (input.equals("next")) {
-                if (currentPage < pageCount) {
-                    currentPage++;
-                } else {
-                    System.out.println("Already on the last page.");
-                }
-            } else if (input.equals("prev")) {
-                if (currentPage > 1) {
-                    currentPage--;
-                } else {
-                    System.out.println("Already on the first page.");
-                }
-            } else if (input.equals("exit")) {
-                break;
-            } else {
-                System.out.println("Invalid input. Please enter 'next', 'prev', or 'exit'.");
+            switch (input) {
+                case "next":
+                    if (currentPage < pageCount) {
+                        currentPage++;
+                    } else {
+                        System.out.println("Already on the last page.");
+                    }
+                    break;
+                case "prev":
+                    if (currentPage > 1) {
+                        currentPage--;
+                    } else {
+                        System.out.println("Already on the first page.");
+                    }
+                    break;
+                case "exit":
+                    break label;
+                default:
+                    System.out.println("Invalid input. Please enter 'next', 'prev', or 'exit'.");
+                    break;
             }
         }
     }
@@ -259,39 +263,76 @@ public class Student implements AddStudent {
     }
     @Override
     public void updateDataInFile(String filePath) {
-        commitChangesToFile();
         Scanner scanner = new Scanner(System.in);
         System.out.println("Enter the ID of the student you want to update:");
         String studentId = scanner.nextLine().trim();
 
-        try {
-            Path path = Paths.get(filePath);
-            List<String> fileContent = new ArrayList<>(Files.readAllLines(path));
-            int rowToUpdate = -1;
+        // Search for the student in the list
+        Optional<Student> optionalStudent = students.stream()
+                .filter(student -> student.getId().equalsIgnoreCase(studentId))
+                .findFirst();
 
-            // Search for the row containing the student ID
-            for (int i = 0; i < fileContent.size(); i++) {
-                String line = fileContent.get(i);
-                if (line.startsWith(studentId + ",")) {
-                    rowToUpdate = i;
+        if (optionalStudent.isPresent()) {
+            Student studentToUpdate = optionalStudent.get();
+
+            // Display current student details
+            System.out.println("Current details of the student:");
+            displayStudentDetails(studentToUpdate);
+
+            // Prompt user for the field to update
+            System.out.println("Which field do you want to update? (name/date/class/subject)");
+            String fieldToUpdate = scanner.nextLine().trim().toLowerCase();
+
+            // Update the chosen field
+            switch (fieldToUpdate) {
+                case "name":
+                    System.out.println("Enter new name:");
+                    String newName = scanner.nextLine().trim();
+                    studentToUpdate.setName(newName);
                     break;
-                }
+                case "date":
+                    System.out.println("Enter new date of birth (YYYY-MM-DD):");
+                    String newDateOfBirth = scanner.nextLine().trim();
+                    studentToUpdate.setDateOfBirth(newDateOfBirth);
+                    break;
+                case "class":
+                    System.out.println("Enter new classroom:");
+                    String newClassroom = scanner.nextLine().trim();
+                    studentToUpdate.setClassroom(newClassroom);
+                    break;
+                case "subject":
+                    System.out.println("Enter new subject:");
+                    String newSubject = scanner.nextLine().trim();
+                    studentToUpdate.setSubject(newSubject);
+                    break;
+                default:
+                    System.out.println("Invalid field specified. No changes made.");
+                    break;
             }
 
-            if (rowToUpdate != -1) {
-                System.out.println("Enter the new data cut it by use this sign , :");
-                String newData = scanner.nextLine().trim();
+            // Commit Changes
+            System.out.println("Do you want to commit changes? (yes/no)");
+            String answer = scanner.nextLine().trim().toLowerCase();
 
-                fileContent.set(rowToUpdate, newData); // Update the data at the specified row
-                Files.write(path, fileContent);
-                System.out.println("Data updated successfully for student with ID: " + studentId);
-            } else {
-                System.out.println("Student with ID " + studentId + " not found.");
+            switch (answer) {
+                case "yes":
+                    // Write updated data to file
+                    commitChangesToFile();
+                    System.out.println("Changes committed successfully.");
+                    break;
+                case "no":
+                    System.out.println("Changes discarded.");
+                    break;
+                default:
+                    System.out.println("Invalid input. Changes discarded.");
+                    break;
             }
-        } catch (IOException e) {
-            System.out.println("Error updating data in file: " + e.getMessage());
+        } else {
+            System.out.println("Student with ID " + studentId + " not found.");
         }
     }
+
+
     public void commitOrNot() {
         Scanner scanner = new Scanner(System.in);
         System.out.println("Do you want to commit changes? (yes/no)");
@@ -441,7 +482,7 @@ public class Student implements AddStudent {
                         7.Generate Data to File 8.Delete/Clear Data Store From Data Store
                         0,99.Exit""");
             System.out.println(repeat("=", 1000));
-            student.displayStudentDataWithPagination(students);
+//            student.displayStudentDataWithPagination(students);
             System.out.println(repeat("=", 1000));
             System.out.println("Enter your choice: ");
             choice = scanner.nextInt();
