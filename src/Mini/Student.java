@@ -229,24 +229,48 @@ public class Student implements AddStudent {
         }
     }
 
-    @Override
-    public void searchStudent() {
-        System.out.println("Enter the ID or name of the student to search:");
-        String searchTerm = new Scanner(System.in).nextLine().trim();
-        boolean found = false;
-        for (Student student : students) {
-            if (student.getId().equalsIgnoreCase(searchTerm) || student.getName().equalsIgnoreCase(searchTerm)) {
-                System.out.println("Student found:");
-                displayStudentDetails(student); // Display the found student details
-                found = true;
-                break;
-            }
-        }
 
-        if (!found) {
-            System.out.println("Student not found.");
+    public static void searchStudent(ArrayList<Student> students, Scanner scanner) {
+        System.out.println("Choose the search criteria:");
+        System.out.println("1. Search by ID");
+        System.out.println("2. Search by Name");
+
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // Consume newline left-over
+
+        switch (choice) {
+            case 1:
+                System.out.println("Enter the ID of the student you want to search for:");
+                long studentId = scanner.nextLong();
+                Optional<Student> foundStudent = students.stream()
+                        .filter(s -> s.getId().equals(studentId))
+                        .findFirst();
+
+                if (foundStudent.isPresent()) { // Corrected condition
+                    System.out.println("Student Found: " + foundStudent.get().getName());
+                } else {
+                    System.out.println("No student found with ID " + studentId + ".");
+                }
+                break;
+            case 2:
+                System.out.println("Enter the name of the student you want to search for:");
+                String studentName = scanner.nextLine();
+                foundStudent = students.stream()
+                        .filter(s -> s.getName().equalsIgnoreCase(studentName))
+                        .findFirst();
+
+                if (foundStudent.isPresent()) {
+                    System.out.println("Student Found: " + foundStudent.get().getName());
+                } else {
+                    System.out.println("No student found with name " + studentName + ".");
+                }
+                break;
+            default:
+                System.out.println("Invalid choice. Please choose 1 for ID or 2 for Name.");
+                break;
         }
     }
+
     private void displayStudentDetails(Student student) {
         System.out.println("ID: " + student.getId());
         System.out.println("Name: " + student.getName());
@@ -255,7 +279,7 @@ public class Student implements AddStudent {
         System.out.println("Subject: " + student.getSubject());
     }
     @Override
-    public void updateDataInFile(String filePath) {
+    public void updateDataInFile(String filePath) throws IOException {
         Scanner scanner = new Scanner(System.in);
         System.out.println("Enter the ID of the student you want to update:");
         String studentId = scanner.nextLine().trim();
@@ -302,27 +326,12 @@ public class Student implements AddStudent {
                     System.out.println("Invalid field specified. No changes made.");
                     break;
             }
-
-            // Commit Changes
-            System.out.println("Do you want to commit changes? (yes/no)");
-            String answer = scanner.nextLine().trim().toLowerCase();
-
-            switch (answer) {
-                case "yes":
-                    // Write updated data to file
-//                    commitChangesToFile();
-                    System.out.println("Changes committed successfully.");
-                    break;
-                case "no":
-                    System.out.println("Changes discarded.");
-                    break;
-                default:
-                    System.out.println("Invalid input. Changes discarded.");
-                    break;
-            }
+            WriteDataToFile(outputFilePath);
+            commitOrNot();
         } else {
             System.out.println("Student with ID " + studentId + " not found.");
         }
+
     }
     public static boolean addFile() throws IOException {
         // Your existing code for adding a student
@@ -385,28 +394,28 @@ public class Student implements AddStudent {
 
     @Override
     public void deleteDataById(String filePath) {
-//        commitChangesToFile();
         Scanner scanner = new Scanner(System.in);
         System.out.println("Enter the ID of the student you want to delete:");
         String studentId = scanner.nextLine().trim();
 
         try {
-            Path path1 = Paths.get(filePath);
-            List<String> fileContent = new ArrayList<>(Files.readAllLines(path1));
+            Path path = Paths.get(filePath);
+            List<String> fileContent = new ArrayList<>(Files.readAllLines(path));
             boolean found = false;
 
             for (int i = 0; i < fileContent.size(); i++) {
                 String line = fileContent.get(i);
-                String[] parts = line.split(",");
+                String[] parts = line.split("/");
                 if (parts.length >= 1 && parts[0].equals(studentId)) {
+                    WriteDataToFile(outputFilePath);
                     fileContent.remove(i);
                     found = true;
                     break;
                 }
             }
-
+            commitOrNot();
             if (found) {
-                Files.write(path1, fileContent);
+                Files.write(path, fileContent);
                 System.out.println("Student data with ID " + studentId + " deleted successfully.");
             } else {
                 System.out.println("Student with ID " + studentId + " not found.");
@@ -415,6 +424,7 @@ public class Student implements AddStudent {
             System.out.println("Error deleting data from file: " + e.getMessage());
         }
     }
+
 
     public static String repeat(String str, int times) {
         return new String(new char[times]).replace("\0", str);
@@ -537,7 +547,7 @@ public class Student implements AddStudent {
                     student.commitOrNot();
                     break;
                 case 4:
-                    student.searchStudent();
+                    student.searchStudent((ArrayList<Student>) students,scanner);
                     break;
                 case 5:
                     student.updateDataInFile(inputFilePath);

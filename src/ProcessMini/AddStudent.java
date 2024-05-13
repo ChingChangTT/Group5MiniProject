@@ -7,8 +7,7 @@ public interface AddStudent {
     List<String> add() throws IOException;
 
     void listStudentsAsTable(String file);
-    void searchStudent();
-    void updateDataInFile(String file);
+    void updateDataInFile(String file) throws IOException;
     void deleteDataById(String filePath);
 }
 
