@@ -83,10 +83,10 @@ public class Student implements AddStudent {
 
         String dateOfBirth = year + "-" + month + "-" + day;
 
-        System.out.println("Enter student classroom:");
+        System.out.println("Enter student classroom [+] you can input more than one :");
         String classroom = scanner.nextLine();
         List<String> classrooms = Arrays.asList(classroom.split("/"));
-        System.out.println("Enter student subject:");
+        System.out.println("Enter student subject you can [+] input subject more than one :");
         String subject = scanner.nextLine();
         List<String> subjects = Arrays.asList(subject.split("/"));
         Student student = new Student(id, name, dateOfBirth, String.join(",",classrooms)
@@ -103,7 +103,7 @@ public class Student implements AddStudent {
         try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(paths))) {
             StringBuilder studentData = new StringBuilder();
             for (Student s : students) {
-                studentData.append(s.getId()).append("/").append(s.getName()).append("/").append(s.getDateOfBirth()).append("/")
+                studentData.append(s.getId()+"CSTAD").append("/").append(s.getName()).append("/").append(s.getDateOfBirth()).append("/")
                         .append(s.getClassroom()).append("/").append(s.getSubject()).append(System.lineSeparator());
             }
             bos.write(studentData.toString().getBytes());
@@ -196,11 +196,9 @@ public class Student implements AddStudent {
         while (true) {
             int startIndex = (currentPage - 1) * pageSize;
             int endIndex = Math.min(startIndex + pageSize, students.size());
-
             // Display current page data
             System.out.println("Page " + currentPage + " of " + pageCount + ":");
             listDataStudent(students.subList(startIndex, endIndex),5,5);
-
             // Ask user for navigation input
             System.out.println("\nEnter 'next' to view next page, 'prev' to view previous page, or 'exit' to quit:");
             String input = scanner.nextLine().trim().toLowerCase();
@@ -237,19 +235,22 @@ public class Student implements AddStudent {
 
         int choice = scanner.nextInt();
         scanner.nextLine(); // Consume newline left-over
-
         switch (choice) {
             case 1:
                 System.out.println("Enter the ID of the student you want to search for:");
-                long studentId = scanner.nextLong();
+                long studentId = scanner.nextLong(); // Reading input directly as long
+                scanner.nextLine();
                 Optional<Student> foundStudent = students.stream()
-                        .filter(s -> s.getId().equals(studentId))
+                        .filter(s -> s.getId().equalsIgnoreCase(String.valueOf(studentId)))
                         .findFirst();
 
-                if (foundStudent.isPresent()) { // Corrected condition
-                    System.out.println("Student Found: " + foundStudent.get().getName());
-                } else {
+                if (!foundStudent.isPresent()) { // Corrected condition
                     System.out.println("No student found with ID " + studentId + ".");
+                } else {
+                    System.out.println("Student name Found: " + foundStudent.get().getName());
+                    System.out.println("ID of Student Found:"+foundStudent.get().getId());
+                    System.out.println("Classroom found:"+foundStudent.get().getClassroom());
+                    System.out.println("Subject FOunded:"+foundStudent.get().getSubject());
                 }
                 break;
             case 2:
@@ -260,7 +261,10 @@ public class Student implements AddStudent {
                         .findFirst();
 
                 if (foundStudent.isPresent()) {
-                    System.out.println("Student Found: " + foundStudent.get().getName());
+                    System.out.println("Student Found: " + foundStudent.get().getId());
+                    System.out.println("ID of Student Found:"+foundStudent.get().getId());
+                    System.out.println("Classroom found:"+foundStudent.get().getClassroom());
+                    System.out.println("Subject FOunded:"+foundStudent.get().getSubject());
                 } else {
                     System.out.println("No student found with name " + studentName + ".");
                 }
@@ -282,11 +286,10 @@ public class Student implements AddStudent {
     public void updateDataInFile(String filePath) throws IOException {
         Scanner scanner = new Scanner(System.in);
         System.out.println("Enter the ID of the student you want to update:");
-        String studentId = scanner.nextLine().trim();
-
+        long studentId = scanner.nextLong();
         // Search for the student in the list
         Optional<Student> optionalStudent = students.stream()
-                .filter(student -> student.getId().equalsIgnoreCase(studentId))
+                .filter(student -> student.getId().equalsIgnoreCase(String.valueOf(studentId)))
                 .findFirst();
 
         if (optionalStudent.isPresent()) {
@@ -297,27 +300,27 @@ public class Student implements AddStudent {
             displayStudentDetails(studentToUpdate);
 
             // Prompt user for the field to update
-            System.out.println("Which field do you want to update? (name/date/class/subject)");
-            String fieldToUpdate = scanner.nextLine().trim().toLowerCase();
-
+            System.out.println("Which field do you want to update? (1.name/2.date/3.class/4.subject)");
+            int fieldToUpdate = scanner.nextInt();
+            scanner.nextLine();
             // Update the chosen field
             switch (fieldToUpdate) {
-                case "name":
+                case 1:
                     System.out.println("Enter new name:");
                     String newName = scanner.nextLine().trim();
                     studentToUpdate.setName(newName);
                     break;
-                case "date":
+                case 2:
                     System.out.println("Enter new date of birth (YYYY-MM-DD):");
                     String newDateOfBirth = scanner.nextLine().trim();
                     studentToUpdate.setDateOfBirth(newDateOfBirth);
                     break;
-                case "class":
+                case 3:
                     System.out.println("Enter new classroom:");
                     String newClassroom = scanner.nextLine().trim();
                     studentToUpdate.setClassroom(newClassroom);
                     break;
-                case "subject":
+                case 4:
                     System.out.println("Enter new subject:");
                     String newSubject = scanner.nextLine().trim();
                     studentToUpdate.setSubject(newSubject);
@@ -541,7 +544,7 @@ public class Student implements AddStudent {
                     System.out.print("\t\t[+] All record:"+count);
                     System.out.println("\t\t\t\t\t\t[+]Previous(prev)\t-Next(next)\t-Back(B)");
                     System.out.println(repeat("=", 1000));
-//                    student.displayStudentDataWithPagination(students);
+                    student.displayStudentDataWithPagination(students);
                     break;
                 case 3:
                     student.commitOrNot();
