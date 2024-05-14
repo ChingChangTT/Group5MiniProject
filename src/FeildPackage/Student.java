@@ -19,4 +19,7 @@ public class Student {
     public static List<Student> students = new ArrayList<>();
     public static String inputFilePath = "output.csv";
     public static String outputFilePath = "Temp.csv";
+    public static int currentIndex = 0;
+    public  static int pageSize = 5;
+    public static int prevIndex = 0;
 }

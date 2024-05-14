@@ -129,8 +129,38 @@ public class StudentManagement implements AddStudent {
     }
 
     public void listDataStudent() {
-        readDataFromFile("output.csv");
-        listStudentsAsTable("output.csv");
+        displayCurrentPage();
+        while (true) {
+            System.out.println("\nEnter 'next' to view the next page, 'prev' to view the previous page, or 'exit' to quit:");
+            String input = new Scanner(System.in).nextLine().trim().toLowerCase();
+            switch (input) {
+                case "next":
+                    if (currentIndex + pageSize < students.size()) {
+                        prevIndex=currentIndex+pageSize;
+
+                    } else {
+                        System.out.println("Already on the last page.");
+                    }
+                    readDataFromFile(inputFilePath);
+                    listStudentsAsTable(inputFilePath);
+                    break;
+                case "prev":
+                    if (prevIndex >= 0) {
+                        currentIndex = prevIndex;
+                        prevIndex = Math.max(0, prevIndex - pageSize);
+                    } else {
+                        System.out.println("Already on the first page.");
+                    }
+                    readDataFromFile(inputFilePath);
+                    listStudentsAsTable(inputFilePath);
+                    break;
+                case "exit":
+                    return;
+                default:
+                    System.out.println("Invalid input. Please try again.");
+                    break;
+            }
+        }
     }
 
     public void readDataFromFile(String filePath) {
@@ -166,44 +196,6 @@ public class StudentManagement implements AddStudent {
             System.out.println("Data read successfully from " + filePath);
         } catch (IOException e) {
             System.out.println("Error reading from file: " + e.getMessage());
-        }
-    }
-
-    public void displayStudentDataWithPagination(List<Student> students) {
-        Scanner scanner = new Scanner(System.in);
-        final int pageSize = 5;
-        int pageCount = (int) Math.ceil((double) students.size() / pageSize);
-        int currentPage = 1;
-
-        label:
-        while (true) {
-            // Display current page data
-            System.out.println("Page " + currentPage + " of " + pageCount + ":");
-            listDataStudent();
-            System.out.println("\nEnter 'next' to view next page, 'prev' to view previous page, or 'exit' to quit:");
-            String input = scanner.nextLine().trim().toLowerCase();
-
-            switch (input) {
-                case "next":
-                    if (currentPage < pageCount) {
-                        currentPage++;
-                    } else {
-                        System.out.println("Already at the last page.");
-                    }
-                    break;
-                case "prev":
-                    if (currentPage > 1) {
-                        currentPage--;
-                    } else {
-                        System.out.println("Already at the first page.");
-                    }
-                    break;
-                case "exit":
-                    break label;
-                default:
-                    System.out.println("Invalid input. Please try again.");
-                    break;
-            }
         }
     }
 
@@ -509,6 +501,14 @@ public class StudentManagement implements AddStudent {
     }
     public  String repeat(String str, int times) {
         return new String(new char[times]).replace("\0", str);
+    }
+    public void displayCurrentPage() {
+        int totalStudents = students.size();
+        int totalPages = (int) Math.ceil((double) totalStudents / pageSize);
+        int currentPage = (currentIndex / pageSize) + 1;
+
+        System.out.println("Page " + currentPage + " of " + totalPages + ":");
+
     }
 }
 

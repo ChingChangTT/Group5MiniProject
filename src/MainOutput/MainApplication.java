@@ -50,6 +50,7 @@ public class MainApplication {
         } catch (IOException e) {
             System.out.println("An error occurred while reading the file: " + e.getMessage());
         }
+        student.displayCurrentPage();
         do {
             student.commitOrNot();
             System.out.println("\n>>>>>>>>>>>>>Check In before Choose<<<<<<<<<<<<<");
@@ -81,7 +82,6 @@ public class MainApplication {
                         System.out.print("\t\t[+] All record:" + count);
                         System.out.println("\t\t\t\t\t\t[+]Previous(prev)\t-Next(next)\t-Back(B)");
                         System.out.println(student.repeat("=", 1000));
-                        student.displayStudentDataWithPagination(students);
                         break;
                     case 3:
                         student.commitOrNot();
