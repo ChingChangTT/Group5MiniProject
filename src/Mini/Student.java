@@ -120,9 +120,7 @@ public class Student implements AddStudent {
 
     @Override
     public void listStudentsAsTable(String file) {
-//        Instant  beforeReadData = Instant .now();
-//        long startTime = System.nanoTime();
-//        readDataFromFile("output.csv");
+
         Table tb = new Table(5, BorderStyle.UNICODE_BOX_DOUBLE_BORDER);
         for (int i = 0; i < 5; i++) {
             tb.setColumnWidth(i, 25, 25);
@@ -141,20 +139,10 @@ public class Student implements AddStudent {
             tb.addCell(student.getSubject(), new CellStyle(CellStyle.HorizontalAlign.CENTER));
         }
         System.out.println(tb.render());
-
-//        Instant afterReadDate = Instant.now();
-//        long endTime = System.nanoTime();
-//        if (Objects.equals(file, "output.csv")) {
-////            System.out.print("Time used to Read and Write data: " + ((afterReadDate.toEpochMilli() - beforeReadData.toEpochMilli()) * 0.001) + "s\n");
-//            System.out.print("Time used to Read and Write data: " + (endTime - startTime) / 1e9 + " s\n");
-//        } else if (Objects.equals(file, "DummyFile.csv")) {
-//            System.out.print("Time used to read 1000 000 record: " + (endTime - startTime) / 1e9 + " s\n");
-//        } else {
-//            System.out.println("No file to read.");
-//        }
+        readDataFromFile(inputFilePath);
     }
 
-    public void listDataStudent(List<Student> students, int pageNumber, int recordsPerPage) throws IOException {
+    public void listDataStudent() {
         readDataFromFile("output.csv");
         listStudentsAsTable("output.csv");
     }
@@ -179,7 +167,7 @@ public class Student implements AddStudent {
                             String classrooms = parts[3];
                             String subjectParts = parts[4];
 
-                            return new Student(id, name, dateOfBirth, classrooms.toString(), subjectParts.toString());
+                            return new Student(id, name, dateOfBirth, classrooms, subjectParts);
                         } else {
                             return null;
                         }
@@ -188,14 +176,14 @@ public class Student implements AddStudent {
                     .collect(Collectors.toList());
             Instant endTime = Instant.now();
             Duration duration = Duration.between(startTime, endTime);
-            System.out.println("Time to read data: " +  duration.toMillis()/1000.0+ " seconds");
+            System.out.println("Time to read data: " +  duration.toMillis()/1000.00+ " seconds");
             System.out.println("Data read successfully from " + filePath);
         } catch (IOException e) {
             System.out.println("Error reading from file: " + e.getMessage());
         }
     }
 
-    private void displayStudentDataWithPagination(List<Student> students) throws IOException {
+    private void displayStudentDataWithPagination(List<Student> students) {
         Scanner scanner = new Scanner(System.in);
         final int pageSize = 5;
         int pageCount = (int) Math.ceil((double) students.size() / pageSize);
@@ -203,11 +191,9 @@ public class Student implements AddStudent {
 
         label:
         while (true) {
-            int startIndex = (currentPage - 1) * pageSize;
-            int endIndex = Math.min(startIndex + pageSize, students.size());
             // Display current page data
             System.out.println("Page " + currentPage + " of " + pageCount + ":");
-            listDataStudent(students.subList(startIndex, endIndex), 5, 5);
+            listDataStudent();
             System.out.println("\nEnter 'next' to view next page, 'prev' to view previous page, or 'exit' to quit:");
             String input = scanner.nextLine().trim().toLowerCase();
 
@@ -235,8 +221,8 @@ public class Student implements AddStudent {
         }
     }
 
-
-    public static void searchStudent(ArrayList<Student> students, Scanner scanner) {
+    @Override
+    public  void searchStudent(ArrayList<Student> students, Scanner scanner) {
         System.out.println("Choose the search criteria:");
         System.out.println("1. Search by ID");
         System.out.println("2. Search by Name");
@@ -252,13 +238,13 @@ public class Student implements AddStudent {
                         .filter(s -> s.getId().equalsIgnoreCase(String.valueOf(studentId)))
                         .findFirst();
 
-                if (!foundStudent.isPresent()) { // Corrected condition
+                if (foundStudent.isEmpty()) {
                     System.out.println("No student found with ID " + studentId + ".");
                 } else {
                     System.out.println("Student name Found: " + foundStudent.get().getName());
                     System.out.println("ID of Student Found:" + foundStudent.get().getId());
                     System.out.println("Classroom found:" + foundStudent.get().getClassroom());
-                    System.out.println("Subject FOunded:" + foundStudent.get().getSubject());
+                    System.out.println("Subject Founded:" + foundStudent.get().getSubject());
                 }
                 break;
             case 2:
@@ -272,7 +258,7 @@ public class Student implements AddStudent {
                     System.out.println("Student Found: " + foundStudent.get().getId());
                     System.out.println("ID of Student Found:" + foundStudent.get().getId());
                     System.out.println("Classroom found:" + foundStudent.get().getClassroom());
-                    System.out.println("Subject FOunded:" + foundStudent.get().getSubject());
+                    System.out.println("Subject Founded:" + foundStudent.get().getSubject());
                 } else {
                     System.out.println("No student found with name " + studentName + ".");
                 }
@@ -296,23 +282,18 @@ public class Student implements AddStudent {
         Scanner scanner = new Scanner(System.in);
         System.out.println("Enter the ID of the student you want to update:");
         long studentId = scanner.nextLong();
-        // Search for the student in the list
         Optional<Student> optionalStudent = students.stream()
                 .filter(student -> student.getId().equalsIgnoreCase(String.valueOf(studentId)))
                 .findFirst();
 
         if (optionalStudent.isPresent()) {
             Student studentToUpdate = optionalStudent.get();
-
-            // Display current student details
             System.out.println("Current details of the student:");
             displayStudentDetails(studentToUpdate);
 
-            // Prompt user for the field to update
             System.out.println("Which field do you want to update? (1.name/2.date/3.class/4.subject)");
             int fieldToUpdate = scanner.nextInt();
             scanner.nextLine();
-            // Update the chosen field
             switch (fieldToUpdate) {
                 case 1:
                     System.out.println("Enter new name:");
@@ -345,12 +326,12 @@ public class Student implements AddStudent {
         }
 
     }
-
+    @Override
     public void commitOrNot() throws IOException {
         Path tempFilePath = Paths.get("Temp.csv");
         Path outputFilePath = Paths.get("output.csv");
         boolean fileExistsAndNotEmpty = Files.exists(tempFilePath) && Files.size(tempFilePath) > 0;
-        if (fileExistsAndNotEmpty == false) {
+        if (!fileExistsAndNotEmpty) {
             System.out.println("Data already commit So not need to commit ><.");
 
         } else {
@@ -368,20 +349,12 @@ public class Student implements AddStudent {
                 } catch (IOException e) {
                     System.out.println("Error transferring data: " + e.getMessage());
                 }
-                // Clear data from temp.csv
-//                try {
-//                    Files.write(tempFilePath, Collections.emptyList());
-//                    System.out.println("Data transferred and temp.csv cleared successfully.");
-//                } catch (IOException e) {
-//                    System.out.println("Error clearing temp.csv: " + e.getMessage());
-//                }
                 try (BufferedWriter writer = Files.newBufferedWriter(tempFilePath)) {
                     writer.write("");
                     writer.flush();
                 } catch (IOException e) {
                     System.out.println("Error clearing Temp.csv: " + e.getMessage());
                 }
-//                System.out.println("Data transferred and Temp.csv cleared successfully.");
             } else {
                 try (BufferedWriter writer = Files.newBufferedWriter(tempFilePath)) {
                     writer.write("");
@@ -433,7 +406,7 @@ public class Student implements AddStudent {
     public static String repeat(String str, int times) {
         return new String(new char[times]).replace("\0", str);
     }
-
+    @Override
     public void clearDataStore() {
         students.clear();
         try {
@@ -452,23 +425,19 @@ public class Student implements AddStudent {
             System.out.println("Error deleting data file: " + e.getMessage());
         }
     }
-
+    @Override
     public void generateData() {
         String dummyFilePath = inputFilePath;
         int TOTAL_RECORDS = 1000001;
-        int BATCH_SIZE = 1000; // Adjust batch size based on performance testing
+        int BATCH_SIZE = 1000;
         Random random = new Random();
-
-        // Create a BlockingQueue to collect records from threads
         BlockingQueue<String> recordQueue = new LinkedBlockingQueue<>();
-
-        // Submit tasks to a ThreadPoolExecutor
         ThreadPoolExecutor executor = new ThreadPoolExecutor(
-                10, // Core pool size
-                20, // Maximum pool size
-                60, // Keep alive time
+                10,
+                20,
+                60,
                 TimeUnit.SECONDS,
-                new LinkedBlockingQueue<>()); // Work queue
+                new LinkedBlockingQueue<>());
 
         try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(dummyFilePath), StandardCharsets.UTF_8)) {
             for (int i = 0; i <= TOTAL_RECORDS; i += BATCH_SIZE) {
@@ -478,16 +447,16 @@ public class Student implements AddStudent {
                         int randomNum = random.nextInt(90000) + 10000;
                         String id = randomNum + "CSTAD";
                         String name = "student" + finalJ;
-                        String dateOfBirth = "2000-01-01"; // Example date
-                        String classroom = "Class" + (finalJ % 10 + 1); // Example classroom
-                        String subject = "Subject" + (finalJ % 5 + 1); // Example subject
+                        String dateOfBirth = "2000-01-01";
+                        String classroom = "Class" + (finalJ % 10 + 1);
+                        String subject = "Subject" + (finalJ % 5 + 1);
 
                         String sb = id + "/" +
                                 name + "/" +
                                 dateOfBirth + "/" +
                                 classroom + "/" +
                                 subject +
-                                System.lineSeparator(); // Use system-dependent line separator
+                                System.lineSeparator();
 
                         recordQueue.offer(sb);
                     });
@@ -495,8 +464,6 @@ public class Student implements AddStudent {
                 }
             }
             readDataFromFile(inputFilePath);
-//            listStudentsAsTable(inputFilePath);
-            // Wait for all tasks to finish
             executor.shutdown();
             try {
                 if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
@@ -505,8 +472,6 @@ public class Student implements AddStudent {
             } catch (InterruptedException e) {
                 executor.shutdownNow();
             }
-
-            // Process the queue to write records to the file
             while (!recordQueue.isEmpty()) {
                 String record = recordQueue.poll();
                 try {
@@ -580,7 +545,7 @@ public class Student implements AddStudent {
                     student.add();
                     break;
                 case 2:
-                    student.listDataStudent(students,5,5);
+                    student.listDataStudent();
                     System.out.println(repeat("=", 1000));
                     System.out.print("[+]Page number : 1");
                     System.out.print("\t\t[+]Actual Record :"+(count-1));
@@ -593,7 +558,7 @@ public class Student implements AddStudent {
                     student.commitOrNot();
                     break;
                 case 4:
-                    searchStudent((ArrayList<Student>) students,scanner);
+                    student.searchStudent((ArrayList<Student>) students,scanner);
                     break;
                 case 5:
                     student.updateDataInFile(inputFilePath);
