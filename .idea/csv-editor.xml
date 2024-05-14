@@ -10,13 +10,6 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\Group5\output.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="\Temp.csv">
           <value>
             <Attribute>

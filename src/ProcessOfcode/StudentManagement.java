@@ -1,43 +1,29 @@
-package Mini;
-
-import ProcessMini.AddStudent;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+package ProcessOfcode;
+import AllFunction.AddStudent;
+import FeildPackage.Student;
 import org.nocrala.tools.texttablefmt.BorderStyle;
 import org.nocrala.tools.texttablefmt.CellStyle;
 import org.nocrala.tools.texttablefmt.Table;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class Student implements AddStudent {
-    private String id;
-    private String name;
-    private String dateOfBirth;
-    private String classroom;
-    private String subject;
-    public static List<Student> students = new ArrayList<>();
-    public static String inputFilePath = "output.csv";
-    public static String outputFilePath = "Temp.csv";
+import static FeildPackage.Student.*;
 
+public class StudentManagement implements AddStudent {
     @Override
     public List<String> add() throws IOException {
         Scanner scanner = new Scanner(System.in);
         int randomNum = new Random().nextInt(90000) + 10000;
-        String id = randomNum + "CSTAD";
-
+        String id = ( randomNum+ "CSTAD").toString();
         System.out.println("Enter student name:");
         String name = scanner.nextLine();
         String year = "";
@@ -94,8 +80,8 @@ public class Student implements AddStudent {
         System.out.println("Enter student subject you can [+] input subject more than one :");
         String subject = scanner.nextLine();
         List<String> subjects = Arrays.asList(subject.split("/"));
-        Student student = new Student(id, name, dateOfBirth, String.join(",", classrooms)
-                , String.join(",", subjects));
+        Student student = new Student(id, name, dateOfBirth, String.join(",", classrooms), String.join(",",
+                subjects));
         students.add(student);
         WriteDataToFile(outputFilePath);
         commitOrNot();
@@ -103,8 +89,8 @@ public class Student implements AddStudent {
         return List.of();
     }
 
-
     public void WriteDataToFile(String paths) {
+        Instant startTime = Instant.now();
         try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(paths))) {
             StringBuilder studentData = new StringBuilder();
             for (Student s : students) {
@@ -112,15 +98,16 @@ public class Student implements AddStudent {
                         .append(s.getClassroom()).append("/").append(s.getSubject()).append(System.lineSeparator());
             }
             bos.write(studentData.toString().getBytes());
+            Instant endTime = Instant.now();
+            Duration duration = Duration.between(startTime, endTime);
+            System.out.println("Time to write data: " + duration.toMillis() / 1000.00 + " seconds");
         } catch (IOException e) {
             System.out.println("Error writing to file: " + e.getMessage());
         }
     }
 
-
     @Override
     public void listStudentsAsTable(String file) {
-
         Table tb = new Table(5, BorderStyle.UNICODE_BOX_DOUBLE_BORDER);
         for (int i = 0; i < 5; i++) {
             tb.setColumnWidth(i, 25, 25);
@@ -176,14 +163,14 @@ public class Student implements AddStudent {
                     .collect(Collectors.toList());
             Instant endTime = Instant.now();
             Duration duration = Duration.between(startTime, endTime);
-            System.out.println("Time to read data: " +  duration.toMillis()/1000.00+ " seconds");
+            System.out.println("Time to read data: " + duration.toMillis() / 1000.00 + " seconds");
             System.out.println("Data read successfully from " + filePath);
         } catch (IOException e) {
             System.out.println("Error reading from file: " + e.getMessage());
         }
     }
 
-    private void displayStudentDataWithPagination(List<Student> students) {
+    public void displayStudentDataWithPagination(List<Student> students) {
         Scanner scanner = new Scanner(System.in);
         final int pageSize = 5;
         int pageCount = (int) Math.ceil((double) students.size() / pageSize);
@@ -202,27 +189,27 @@ public class Student implements AddStudent {
                     if (currentPage < pageCount) {
                         currentPage++;
                     } else {
-                        System.out.println("Already on the last page.");
+                        System.out.println("Already at the last page.");
                     }
                     break;
                 case "prev":
                     if (currentPage > 1) {
                         currentPage--;
                     } else {
-                        System.out.println("Already on the first page.");
+                        System.out.println("Already at the first page.");
                     }
                     break;
                 case "exit":
                     break label;
                 default:
-                    System.out.println("Invalid input. Please enter 'next', 'prev', or 'exit'.");
+                    System.out.println("Invalid input. Please try again.");
                     break;
             }
         }
     }
 
     @Override
-    public  void searchStudent(ArrayList<Student> students, Scanner scanner) {
+    public void searchStudent(List<Student> students, Scanner scanner) {
         System.out.println("Choose the search criteria:");
         System.out.println("1. Search by ID");
         System.out.println("2. Search by Name");
@@ -232,10 +219,16 @@ public class Student implements AddStudent {
         switch (choice) {
             case 1:
                 System.out.println("Enter the ID of the student you want to search for:");
-                long studentId = scanner.nextLong(); // Reading input directly as long
-                scanner.nextLine();
+                String studentIdStr = scanner.nextLine(); // Reading input directly as long
+                long studentId;
+                try {
+                    studentId = Long.parseLong(studentIdStr.replaceAll("\\D", ""));
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid ID format. Please enter a numeric value.");
+                    return ;
+                }
                 Optional<Student> foundStudent = students.stream()
-                        .filter(s -> s.getId().equalsIgnoreCase(String.valueOf(studentId)))
+                        .filter(s ->  Long.parseLong(s.getId().replaceAll("\\D", "")) == studentId)
                         .findFirst();
 
                 if (foundStudent.isEmpty()) {
@@ -268,7 +261,6 @@ public class Student implements AddStudent {
                 break;
         }
     }
-
     private void displayStudentDetails(Student student) {
         System.out.println("ID: " + student.getId());
         System.out.println("Name: " + student.getName());
@@ -278,54 +270,90 @@ public class Student implements AddStudent {
     }
 
     @Override
-    public void updateDataInFile(String filePath) throws IOException {
+    public int updateDataInFile(String filePath) throws IOException {
         Scanner scanner = new Scanner(System.in);
         System.out.println("Enter the ID of the student you want to update:");
-        long studentId = scanner.nextLong();
+        String studentIdStr = scanner.nextLine();
+        long studentId;
+        try {
+            studentId = Long.parseLong(studentIdStr.replaceAll("\\D", ""));
+        } catch (NumberFormatException e) {
+            System.out.println("Invalid ID format. Please enter a numeric value.");
+            return 0;
+        }
         Optional<Student> optionalStudent = students.stream()
-                .filter(student -> student.getId().equalsIgnoreCase(String.valueOf(studentId)))
+                .filter(student -> Long.parseLong(student.getId().replaceAll("\\D", "")) == studentId)
                 .findFirst();
-
         if (optionalStudent.isPresent()) {
             Student studentToUpdate = optionalStudent.get();
             System.out.println("Current details of the student:");
             displayStudentDetails(studentToUpdate);
-
+            int fieldToUpdate;
             System.out.println("Which field do you want to update? (1.name/2.date/3.class/4.subject)");
-            int fieldToUpdate = scanner.nextInt();
-            scanner.nextLine();
-            switch (fieldToUpdate) {
-                case 1:
-                    System.out.println("Enter new name:");
-                    String newName = scanner.nextLine().trim();
-                    studentToUpdate.setName(newName);
-                    break;
-                case 2:
-                    System.out.println("Enter new date of birth (YYYY-MM-DD):");
-                    String newDateOfBirth = scanner.nextLine().trim();
-                    studentToUpdate.setDateOfBirth(newDateOfBirth);
-                    break;
-                case 3:
-                    System.out.println("Enter new classroom:");
-                    String newClassroom = scanner.nextLine().trim();
-                    studentToUpdate.setClassroom(newClassroom);
-                    break;
-                case 4:
-                    System.out.println("Enter new subject:");
-                    String newSubject = scanner.nextLine().trim();
-                    studentToUpdate.setSubject(newSubject);
-                    break;
-                default:
-                    System.out.println("Invalid field specified. No changes made.");
-                    break;
+            do {
+                String input = scanner.nextLine();
+                try {
+                    fieldToUpdate = Integer.parseInt(input);
+                    if (fieldToUpdate < 1 || fieldToUpdate > 4) {
+                        throw new IllegalArgumentException("Invalid field number. Please enter a number between 1 and 4.");
+                    }
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid input. Please enter a number corresponding to the field you want to update.");
+                    fieldToUpdate = -1;
+                } catch (IllegalArgumentException e) {
+                    System.out.println(e.getMessage());
+                    fieldToUpdate = -1;
+                }
+            } while (fieldToUpdate == -1);
+            try {
+                switch (fieldToUpdate) {
+                    case 1:
+                        System.out.println("Enter new name:");
+                        String newName = new Scanner(System.in).nextLine();
+                        if (newName.isEmpty()) {
+                            throw new IllegalArgumentException("Name cannot be empty.");
+                        }
+                        studentToUpdate.setName(newName);
+                        break;
+                    case 2:
+                        System.out.println("Enter new date of birth (YYYY-MM-DD):");
+                        String newDateOfBirth = scanner.nextLine().trim();
+                        if (!newDateOfBirth.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                            throw new IllegalArgumentException("Date of birth must be in the format YYYY-MM-DD.");
+                        }
+                        studentToUpdate.setDateOfBirth(newDateOfBirth);
+                        break;
+                    case 3:
+                        System.out.println("Enter new classroom:");
+                        String newClassroom = scanner.nextLine().trim();
+                        if (newClassroom.isEmpty()) {
+                            throw new IllegalArgumentException("Classroom cannot be empty.");
+                        }
+                        studentToUpdate.setClassroom(newClassroom);
+                        break;
+                    case 4:
+                        System.out.println("Enter new subject:");
+                        String newSubject = scanner.nextLine().trim();
+                        if (newSubject.isEmpty()) {
+                            throw new IllegalArgumentException("Subject cannot be empty.");
+                        }
+                        studentToUpdate.setSubject(newSubject);
+                        break;
+                    default:
+                        break;
+                }
+            } catch (IllegalArgumentException e) {
+                System.out.println("Error: " + e.getMessage());
+                return fieldToUpdate;
             }
             WriteDataToFile(outputFilePath);
             commitOrNot();
         } else {
             System.out.println("Student with ID " + studentId + " not found.");
         }
-
+        return 0;
     }
+
     @Override
     public void commitOrNot() throws IOException {
         Path tempFilePath = Paths.get("Temp.csv");
@@ -366,7 +394,6 @@ public class Student implements AddStudent {
                 System.out.println("Data has not input to file");
             }
         }
-
     }
 
     @Override
@@ -401,11 +428,6 @@ public class Student implements AddStudent {
             System.out.println("Error deleting data from file: " + e.getMessage());
         }
     }
-
-
-    public static String repeat(String str, int times) {
-        return new String(new char[times]).replace("\0", str);
-    }
     @Override
     public void clearDataStore() {
         students.clear();
@@ -425,6 +447,7 @@ public class Student implements AddStudent {
             System.out.println("Error deleting data file: " + e.getMessage());
         }
     }
+
     @Override
     public void generateData() {
         String dummyFilePath = inputFilePath;
@@ -458,7 +481,7 @@ public class Student implements AddStudent {
                                 subject +
                                 System.lineSeparator();
 
-                        recordQueue.offer(sb);
+                        recordQueue.add(sb);
                     });
 
                 }
@@ -485,96 +508,8 @@ public class Student implements AddStudent {
             System.err.println("Error writing to file: " + e.getMessage());
         }
     }
-
-
-    public static void main(String[] args) throws IOException {
-        Student student = new Student();
-        Scanner scanner = new Scanner(System.in);
-        int choice;
-        System.out.println("""
-                \s
-                  ██╗    ██╗███████╗██╗     ██╗      ██████╗ ██████╗ ███╗   ███╗    ████████╗ ██████╗      ██████╗███████╗████████╗ █████╗ ██████╗\s
-                  ██║    ██║██╔════╝██║     ██║     ██╔════╝██╔═══██╗████╗ ████║    ╚══██╔══╝██╔═══██╗    ██╔════╝██╔════╝╚══██╔══╝██╔══██╗██╔══██╗
-                  ██║ █╗ ██║█████╗  ██║     ██║     ██║     ██║   ██║██╔████╔██║       ██║   ██║   ██║    ██║     ███████╗   ██║   ███████║██║  ██║
-                  ██║███╗██║██╔══╝  ██║     ██║     ██║     ██║   ██║██║╚██╔╝██║       ██║   ██║   ██║    ██║     ╚════██║   ██║   ██╔══██║██║  ██║
-                  ╚███╔███╔╝███████╗███████╗███████╗╚██████╗╚██████╔╝██║ ╚═╝ ██║       ██║   ╚██████╔╝    ╚██████╗███████║   ██║   ██║  ██║██████╔╝
-                   ╚══╝╚══╝ ╚══════╝╚══════╝╚══════╝ ╚═════╝ ╚═════╝ ╚═╝     ╚═╝       ╚═╝    ╚═════╝      ╚═════╝╚══════╝   ╚═╝   ╚═╝  ╚═╝╚═════╝                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              \s
-
-                """);
-        String filePath = "Temp.csv";
-        // Capture the start time
-        Instant beforeReadData = Instant.now();
-        try {
-            Files.lines(Paths.get(filePath));
-        } catch (IOException e) {
-            System.err.println("Error reading from file: " + e.getMessage());
-        }
-        // Capture the end time
-        Instant afterReadData = Instant.now();
-        long durationInSeconds = Duration.between(beforeReadData, afterReadData).getSeconds();
-
-        System.out.println("[*] Test speed from record of " + filePath + ": " + durationInSeconds + " seconds");
-        int count = 0;
-        try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
-            while (reader.readLine() != null) {
-                count++;
-            }
-            System.out.println("Number of records in file: " + count);
-        } catch (IOException e) {
-            System.out.println("An error occurred while reading the file: " + e.getMessage());
-        }
-        do {
-            student.commitOrNot();
-            System.out.println("\n>>>>>>>>>>>>>Check In before Choose<<<<<<<<<<<<<");
-            System.out.println(repeat("=", 1000));
-            System.out.println("""
-                        1.Add Student           2.List All Student              3.CommitData to File\
-
-                        4.Search for Student    5.Update Student by Info By ID  6.Delete Student Data\
-
-                        7.Generate Data to File 8.Delete/Clear Data Store From Data Store
-                        0,99.Exit""");
-            System.out.println(repeat("=", 1000));
-            System.out.println("Enter your choice: ");
-            choice = scanner.nextInt();
-            switch (choice) {
-                case 0, 99:
-                    System.out.println("Exiting the program...");
-                    break;
-                case 1:
-                    student.add();
-                    break;
-                case 2:
-                    student.listDataStudent();
-                    System.out.println(repeat("=", 1000));
-                    System.out.print("[+]Page number : 1");
-                    System.out.print("\t\t[+]Actual Record :"+(count-1));
-                    System.out.print("\t\t[+] All record:"+count);
-                    System.out.println("\t\t\t\t\t\t[+]Previous(prev)\t-Next(next)\t-Back(B)");
-                    System.out.println(repeat("=", 1000));
-                    student.displayStudentDataWithPagination(students);
-                    break;
-                case 3:
-                    student.commitOrNot();
-                    break;
-                case 4:
-                    student.searchStudent((ArrayList<Student>) students,scanner);
-                    break;
-                case 5:
-                    student.updateDataInFile(inputFilePath);
-                    break;
-                case 6:
-                    student.deleteDataById(inputFilePath);
-                case 7:
-                    student.generateData();
-                    break;
-                case 8:
-                    student.clearDataStore();
-                    break;
-                default:
-                    System.out.println("Invalid choice. Please enter a valid option.");
-            }
-        } while ((choice != 99)&&(choice!=0));
+    public  String repeat(String str, int times) {
+        return new String(new char[times]).replace("\0", str);
     }
 }
 
