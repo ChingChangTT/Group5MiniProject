@@ -9,6 +9,7 @@ import org.nocrala.tools.texttablefmt.CellStyle;
 import org.nocrala.tools.texttablefmt.Table;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.Duration;
 import java.time.Instant;
@@ -31,7 +32,7 @@ public class Student implements AddStudent {
     public List<String> add() throws IOException {
         Scanner scanner = new Scanner(System.in);
         int randomNum = new Random().nextInt(90000) + 10000;
-        String id = String.valueOf(randomNum);
+        String id = randomNum +"CSTAD";
 
         System.out.println("Enter student name:");
         String name = scanner.nextLine();
@@ -103,11 +104,10 @@ public class Student implements AddStudent {
         try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(paths))) {
             StringBuilder studentData = new StringBuilder();
             for (Student s : students) {
-                studentData.append(s.getId()+"CSTAD").append("/").append(s.getName()).append("/").append(s.getDateOfBirth()).append("/")
+                studentData.append(s.getId()).append("/").append(s.getName()).append("/").append(s.getDateOfBirth()).append("/")
                         .append(s.getClassroom()).append("/").append(s.getSubject()).append(System.lineSeparator());
             }
             bos.write(studentData.toString().getBytes());
-            System.out.println("Data written successfully to " + paths);
         } catch (IOException e) {
             System.out.println("Error writing to file: " + e.getMessage());
         }
@@ -116,8 +116,8 @@ public class Student implements AddStudent {
 
     @Override
     public void listStudentsAsTable(String file) {
-        Instant  beforeReadData = Instant .now();
-
+//        Instant  beforeReadData = Instant .now();
+        long startTime = System.nanoTime();
 //        readDataFromFile("output.csv");
         Table tb = new Table(5, BorderStyle.UNICODE_BOX_DOUBLE_BORDER);
         for (int i = 0; i < 5; i++) {
@@ -138,14 +138,18 @@ public class Student implements AddStudent {
         }
         System.out.println(tb.render());
 
-        Instant afterReadDate = Instant.now();
+//        Instant afterReadDate = Instant.now();
+        long endTime = System.nanoTime();
         if (Objects.equals(file, "output.csv")){
-            System.out.print("Time used to read data: " + ((afterReadDate.toEpochMilli() - beforeReadData.toEpochMilli()) * 0.001) + "s\n");
+//            System.out.print("Time used to Read and Write data: " + ((afterReadDate.toEpochMilli() - beforeReadData.toEpochMilli()) * 0.001) + "s\n");
+            System.out.print("Time used to Read and Write data: " + (endTime - startTime) / 1e9 + " s\n");
+        }
+        else if(Objects.equals(file,"DummyFile.csv")){
+            System.out.print("Time used to read 1000 000 record: " + (endTime - startTime) / 1e9 + " s\n");
         }
         else {
-            System.out.print("Time used to read 1000 000 record: " + ((afterReadDate.toEpochMilli() - beforeReadData.toEpochMilli()) * 0.001) + "s");
+            System.out.println("No file to read.");
         }
-
     }
 
     public void listDataStudent(List<Student> students,int pageNumber, int recordsPerPage) throws IOException {
@@ -199,7 +203,6 @@ public class Student implements AddStudent {
             // Display current page data
             System.out.println("Page " + currentPage + " of " + pageCount + ":");
             listDataStudent(students.subList(startIndex, endIndex),5,5);
-            // Ask user for navigation input
             System.out.println("\nEnter 'next' to view next page, 'prev' to view previous page, or 'exit' to quit:");
             String input = scanner.nextLine().trim().toLowerCase();
 
@@ -362,10 +365,10 @@ public class Student implements AddStudent {
                         writer.write(line);
                         writer.newLine();
                     }
+                    System.out.println("Data written successfully to " + inputFilePath);
                 } catch (IOException e) {
                     System.out.println("Error transferring data: " + e.getMessage());
                 }
-
                 // Clear data from temp.csv
 //                try {
 //                    Files.write(tempFilePath, Collections.emptyList());
@@ -379,7 +382,7 @@ public class Student implements AddStudent {
                 } catch (IOException e) {
                     System.out.println("Error clearing Temp.csv: " + e.getMessage());
                 }
-                System.out.println("Data transferred and Temp.csv cleared successfully.");
+//                System.out.println("Data transferred and Temp.csv cleared successfully.");
             }
             else {
                 try (BufferedWriter writer = Files.newBufferedWriter(tempFilePath)) {
@@ -437,7 +440,7 @@ public class Student implements AddStudent {
         try {
             Path filePath = Paths.get(inputFilePath);
             if (Files.exists(filePath)) {
-                Files.delete(filePath);
+                Files.newBufferedWriter(filePath, StandardOpenOption.TRUNCATE_EXISTING).close();
                 System.out.println("Data store cleared successfully. Data file has been deleted.");
             } else {
                 System.out.println("Data file does not exist. Nothing to delete.");
@@ -450,34 +453,42 @@ public class Student implements AddStudent {
             System.out.println("Error deleting data file: " + e.getMessage());
         }
     }
+    public void generateData() {
+        String dummyFilePath = inputFilePath;
+        int TOTAL_RECORDS = 1000000;
+        int BATCH_SIZE = 10000; // Adjust batch size based on performance testing
+        Random random = new Random();
 
-    public void generateData() throws IOException {
-        String file = "DummyFile.csv";
-        Path filePath = Paths.get(file);
-        if (Files.exists(filePath) && Files.size(filePath) > 0) { // Check if the file exists and is not empty
-            readDataFromFile(file);
-            listStudentsAsTable("DummyFile.csv");
+        try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(dummyFilePath), StandardCharsets.UTF_8)) {
+            for (int i = 0; i < TOTAL_RECORDS; i += BATCH_SIZE) {
+                for (int j = i; j < i + BATCH_SIZE && j < TOTAL_RECORDS; j++) {
+                    int randomNum = random.nextInt(90000) + 10000;
+                    String id = randomNum + "CSTAD";
+                    String name = "student" + j;
+                    String dateOfBirth = "2000-01-01"; // Example date
+                    String classroom = "Class" + (j % 10 + 1); // Example classroom
+                    String subject = "Subject" + (j % 5 + 1); // Example subject
 
-        } else {
-            try (BufferedWriter ignored = new BufferedWriter(new FileWriter(file))) {
-                for(int i = 0; i < 1000000; i++) {
-                    int randomNum = new Random().nextInt(90000) + 10000;
-                    String id = String.valueOf(randomNum);
-                    String name = "student" + i; // Initialize local variables
-                    String dateOfBirth = "2024-05-11";
-                    String classroom = "Morning";
-                    String subject = "Java";
-                    Student student = new Student(id, name, dateOfBirth, classroom, subject);
-                    students.add(student);
-//                    WriteDataToFile(); // Assuming WriteDataToFile writes the students to a file
-                    System.out.println("order : " + i);
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(id).append("/")
+                            .append(name).append("/")
+                            .append(dateOfBirth).append("/")
+                            .append(classroom).append("/")
+                            .append(subject)
+                            .append(System.lineSeparator()); // Use system-dependent line separator
+
+                    writer.write(sb.toString());
                 }
-                System.out.println("Finished Insert Batch of Students!!");
-            } catch (IOException e) {
-                System.out.println("Error writing to file: " + e.getMessage());
+                writer.flush(); // Flush buffer after each batch write
             }
+            readDataFromFile(inputFilePath);
+            listStudentsAsTable(inputFilePath);
+            System.out.println("Finished generating data for " + TOTAL_RECORDS + " students.");
+        } catch (IOException e) {
+            System.err.println("Error writing to file: " + e.getMessage());
         }
     }
+
 
     public static void main(String[] args) throws IOException {
         Student student = new Student();
